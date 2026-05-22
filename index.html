@@ -1,11 +1,781 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>milochristos.com</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lumen Air — Apple-Style Demo</title>
+
+<!--
+  ============================================================================
+  APPLE-STYLE PRODUCT PAGE — annotated for study
+  ============================================================================
+  This is a single-file demo built to mirror the techniques used on pages like
+  apple.com/macbook-neo. The product, copy, and visuals are fictional; the
+  patterns are real.
+
+  KEY TECHNIQUES YOU'LL SEE BELOW:
+    1.  Frosted sticky sub-nav  (backdrop-filter blur + scroll detection)
+    2.  Scroll-triggered hero crossfade (start-frame → end-frame transition)
+    3.  Massive typography with tight tracking (SF Pro–style stack)
+    4.  Bento-style "Highlights" grid with varied cell sizes
+    5.  Color-switcher product viewer (radio-driven image swap, no JS state)
+    6.  Scroll-reveal sections using IntersectionObserver
+    7.  Sticky-scroll feature card (text scrolls past a pinned image)
+    8.  Comparison cards row at the bottom
+    9.  Smooth anchor scrolling between sub-nav and sections
+    10. Generous negative space + restrained color palette
+  ============================================================================
+-->
+
+<style>
+  /* ===========================================================
+     1. DESIGN TOKENS
+     Apple-style pages are built on a small, disciplined token set.
+     Notice how few colors there are — that's the point.
+     =========================================================== */
+  :root {
+    --bg:          #ffffff;
+    --bg-soft:     #f5f5f7;   /* Apple's signature off-white panel */
+    --bg-dark:     #161617;
+    --ink:         #1d1d1f;   /* Apple's near-black for text */
+    --ink-muted:   #6e6e73;
+    --link:        #0066cc;   /* Apple blue */
+    --link-hover:  #0077ed;
+    --border:      #d2d2d7;
+    --radius-lg:   28px;
+    --radius-md:   18px;
+
+    /* Apple uses very specific easing — this is close to their feel */
+    --ease:        cubic-bezier(0.28, 0.11, 0.32, 1);
+
+    /* The signature font stack: SF Pro on Apple devices,
+       graceful fallbacks elsewhere. */
+    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+                    "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  /* ===========================================================
+     2. BASELINE RESET
+     Minimal and unopinionated — Apple's CSS isn't fancy here,
+     they just zero things out and let the type carry the design.
+     =========================================================== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }  /* smooth anchor scrolling */
+  body {
+    margin: 0;
+    font-family: var(--font-text);
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.47;
+    letter-spacing: -0.022em;        /* Apple's tight body tracking */
+  }
+  img, svg { display: block; max-width: 100%; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { color: var(--link-hover); text-decoration: underline; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ===========================================================
+     3. STICKY GLOBAL NAV (top bar)
+     Apple's main nav: dark, thin, frosted on scroll.
+     =========================================================== */
+  .global-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: 44px;
+    background: rgba(22, 22, 23, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: #f5f5f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .global-nav ul {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+    margin: 0; padding: 0;
+  }
+  .global-nav a {
+    color: #f5f5f7;
+    opacity: 0.8;
+    transition: opacity 0.2s var(--ease);
+  }
+  .global-nav a:hover { opacity: 1; text-decoration: none; }
+
+  /* ===========================================================
+     4. PRODUCT SUB-NAV
+     The "Overview | Specs | Compare | Buy" bar that sits BELOW
+     the global nav and also sticks. It picks up a subtle shadow
+     once you've scrolled past the hero — that's the .is-scrolled
+     class we toggle with JS at the bottom of the file.
+     =========================================================== */
+  .sub-nav {
+    position: sticky;
+    top: 44px;
+    z-index: 49;
+    background: rgba(245, 245, 247, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s var(--ease);
+  }
+  .sub-nav.is-scrolled { border-bottom-color: rgba(0,0,0,0.08); }
+  .sub-nav-inner {
+    max-width: 1024px;
+    margin: 0 auto;
+    height: 52px;
+    padding: 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+  }
+  .sub-nav-title { font-size: 21px; font-weight: 600; letter-spacing: -0.022em; }
+  .sub-nav-links { display: flex; gap: 28px; align-items: center; }
+  .sub-nav-links a { color: var(--ink); opacity: 0.88; }
+  .sub-nav-links a:hover { opacity: 1; text-decoration: none; }
+  .buy-btn {
+    background: var(--link);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 980px;       /* Apple's pill radius */
+    font-size: 14px;
+    font-weight: 400;
+    border: none;
+    transition: background 0.2s var(--ease);
+  }
+  .buy-btn:hover { background: var(--link-hover); }
+
+  /* ===========================================================
+     5. HERO SECTION
+     The signature Apple opening: huge headline, tiny tagline,
+     and a big crossfading image. We layer TWO images on top of
+     each other and fade between them as the user scrolls.
+     =========================================================== */
+  .hero {
+    text-align: center;
+    padding: 70px 22px 0;
+    overflow: hidden;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(40px, 8vw, 96px);
+    font-weight: 600;
+    letter-spacing: -0.015em;     /* tighter on display sizes */
+    line-height: 1.05;
+    margin: 0;
+  }
+  .hero .tagline {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3.5vw, 36px);
+    font-weight: 400;
+    color: var(--ink-muted);
+    margin: 12px 0 28px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin-bottom: 40px;
+    font-size: 17px;
+  }
+  .hero-actions .pill {
+    background: var(--link);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 980px;
+    border: none;
+    font-size: 17px;
+  }
+  .hero-actions .pill:hover { background: var(--link-hover); }
+  .hero-actions .link-arrow::after { content: " ›"; }
+
+  /*
+    THE CROSSFADE STAGE.
+    Two SVG illustrations occupy the same grid cell. Both start
+    visible; on scroll we add `.is-faded` to the start frame to
+    reveal the end frame underneath. This is the same trick Apple
+    uses (with much fancier video assets) for hero transitions.
+  */
+  .hero-stage {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    display: grid;
+    grid-template-areas: "stack";
+  }
+  .hero-stage > * {
+    grid-area: stack;          /* stack frames on top of each other */
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  }
+  .hero-stage .start-frame { opacity: 1; }
+  .hero-stage .end-frame   { opacity: 0; transform: scale(1.04); }
+  .hero-stage.is-revealed .start-frame { opacity: 0; }
+  .hero-stage.is-revealed .end-frame   { opacity: 1; transform: scale(1); }
+
+  /* ===========================================================
+     6. HIGHLIGHTS GRID  (the "bento" of feature tiles)
+     A clean asymmetric grid. Each tile gets a soft background
+     and large display text. On Apple this is where each tile
+     also has a tiny tab list across the top — we'll mimic that.
+     =========================================================== */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    text-align: center;
+    margin: 120px 0 36px;
+    padding: 0 22px;
+  }
+  .highlights {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 22px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .tile {
+    background: var(--bg-soft);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* The reveal-on-scroll starting state. */
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  }
+  .tile.is-revealed { opacity: 1; transform: translateY(0); }
+  .tile h3 {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 2.2vw, 28px);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    margin: 0;
+    max-width: 22ch;          /* Apple caps line length for readability */
+  }
+  .tile .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+  /*
+    Bento sizing — vary columns to create that asymmetric feel.
+    Adjusting these spans is the easiest way to change the rhythm.
+  */
+  .tile.wide   { grid-column: span 4; }
+  .tile.narrow { grid-column: span 2; }
+  .tile.half   { grid-column: span 3; }
+
+  @media (max-width: 900px) {
+    .tile.wide, .tile.narrow, .tile.half { grid-column: span 6; }
+  }
+
+  /* The "swatch" art inside tiles — using CSS gradients as
+     stand-ins for product photography. */
+  .swatch-row { display: flex; gap: 10px; margin-top: 20px; }
+  .swatch {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    box-shadow: inset 0 -8px 14px rgba(0,0,0,0.12),
+                inset 0 4px 6px rgba(255,255,255,0.35);
+  }
+  .swatch.silver { background: linear-gradient(145deg, #e8e8ec, #b8b8c0); }
+  .swatch.blush  { background: linear-gradient(145deg, #f7c9c4, #d99388); }
+  .swatch.citrus { background: linear-gradient(145deg, #e8e275, #c2a83a); }
+  .swatch.indigo { background: linear-gradient(145deg, #4a5b9a, #2b3768); }
+
+  /* ===========================================================
+     7. COLOR-SWITCHER PRODUCT VIEWER
+     Pure CSS state machine using radio inputs:
+     - Hide the radios (.color-input { display:none })
+     - Each label maps to one color
+     - The image with matching class is shown when its
+       sibling radio is :checked.
+     This is the same UX pattern as Apple's "Take a closer look".
+     =========================================================== */
+  .viewer {
+    background: var(--bg-soft);
+    margin: 80px 22px;
+    border-radius: var(--radius-lg);
+    padding: 80px 22px 60px;
+    text-align: center;
+  }
+  .viewer h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0 0 40px;
+  }
+  .color-input { display: none; }     /* hide the radio circles */
+  .viewer-stage {
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 3;
+  }
+  .viewer-stage > .device {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
+  }
+  /*
+    The sibling-selector chain: when a radio is checked, find its
+    sibling .viewer-stage and inside it light up the matching device.
+    Order matters in the HTML below — radios come BEFORE the stage.
+  */
+  #c-silver:checked ~ .viewer-stage .device.silver,
+  #c-blush:checked  ~ .viewer-stage .device.blush,
+  #c-citrus:checked ~ .viewer-stage .device.citrus,
+  #c-indigo:checked ~ .viewer-stage .device.indigo { opacity: 1; }
+
+  .color-picker {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+  .color-picker label {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s var(--ease);
+  }
+  .color-picker label:hover { transform: scale(1.1); }
+  /* Selected state — a ring around the current swatch */
+  #c-silver:checked ~ .color-picker label[for="c-silver"]::after,
+  #c-blush:checked  ~ .color-picker label[for="c-blush"]::after,
+  #c-citrus:checked ~ .color-picker label[for="c-citrus"]::after,
+  #c-indigo:checked ~ .color-picker label[for="c-indigo"]::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+  }
+
+  /* ===========================================================
+     8. FEATURE SECTION WITH STICKY IMAGE
+     Apple often pins a product photo and lets the descriptive
+     text scroll past it. We use `position: sticky` for this.
+     =========================================================== */
+  .feature {
+    max-width: 1100px;
+    margin: 120px auto;
+    padding: 0 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: start;
+  }
+  .feature-art {
+    position: sticky;
+    top: 120px;             /* clears the global + sub-nav */
+    aspect-ratio: 4 / 5;
+    background: linear-gradient(160deg, #2b3768, #4a5b9a);
+    border-radius: var(--radius-lg);
+  }
+  .feature-copy h2 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    margin: 0 0 24px;
+  }
+  .feature-copy .lede {
+    font-size: 21px;
+    color: var(--ink-muted);
+    line-height: 1.38;
+    max-width: 32ch;
+    margin-bottom: 60px;
+  }
+  .feature-copy .stat {
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+    margin-bottom: 60px;
+  }
+  .feature-copy .stat .big {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1;
+  }
+  .feature-copy .stat .label {
+    font-size: 17px;
+    color: var(--ink-muted);
+    margin-top: 8px;
+  }
+  @media (max-width: 800px) {
+    .feature { grid-template-columns: 1fr; }
+    .feature-art { position: relative; top: 0; max-width: 480px; margin: 0 auto; }
+  }
+
+  /* ===========================================================
+     9. COMPARISON CARDS
+     The "Keep exploring" row at the bottom of every Apple
+     product page. Equal columns, photo + name + tagline + chips.
+     =========================================================== */
+  .compare {
+    max-width: 1240px;
+    margin: 100px auto;
+    padding: 0 22px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 700px) {
+    .compare { grid-template-columns: 1fr; }
+  }
+  .compare-card {
+    background: var(--bg-soft);
+    border-radius: var(--radius-lg);
+    padding: 50px 36px;
+    text-align: center;
+  }
+  .compare-card .art {
+    height: 160px;
+    margin: 12px auto 28px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #e8e8ec, #b8b8c0);
+    max-width: 280px;
+  }
+  .compare-card h3 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .compare-card .price {
+    font-size: 17px;
+    color: var(--ink-muted);
+    margin-bottom: 18px;
+  }
+  .compare-card .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .compare-card .actions .pill {
+    background: var(--link);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 980px;
+    border: none;
+    font-size: 14px;
+  }
+  .compare-card .chips {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--ink-muted);
+  }
+
+  /* ===========================================================
+     10. FOOTER (Apple's mile-long legal block — abbreviated here)
+     =========================================================== */
+  footer {
+    background: var(--bg-soft);
+    color: var(--ink-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 40px 22px;
+  }
+  footer .inner {
+    max-width: 1024px;
+    margin: 0 auto;
+  }
+  footer p { margin: 0 0 12px; }
+</style>
 </head>
 <body>
-  <h1>Hello, world.</h1>
+
+  <!-- ===== 3. GLOBAL NAV ===== -->
+  <nav class="global-nav" aria-label="Global">
+    <ul>
+      <li><a href="#">Store</a></li>
+      <li><a href="#">Products</a></li>
+      <li><a href="#">Support</a></li>
+      <li><a href="#">Search</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===== 4. PRODUCT SUB-NAV ===== -->
+  <div class="sub-nav" id="subNav">
+    <div class="sub-nav-inner">
+      <div class="sub-nav-title">Lumen Air</div>
+      <div class="sub-nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#specs">Specs</a>
+        <a href="#compare">Compare</a>
+        <button class="buy-btn">Buy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5. HERO ===== -->
+  <section class="hero" id="overview">
+    <h1>Lumen Air</h1>
+    <p class="tagline">Hello, light.</p>
+
+    <div class="hero-actions">
+      <button class="pill">Buy</button>
+      <a href="#" class="link-arrow">From $799</a>
+    </div>
+
+    <!--
+      The crossfade stage. The start frame is a single-color render;
+      the end frame shows the product in context. Watching the page,
+      they swap when this element scrolls into view.
+    -->
+    <div class="hero-stage" id="heroStage">
+      <svg class="start-frame" viewBox="0 0 1200 675" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e8e275"/>
+            <stop offset="100%" stop-color="#c2a83a"/>
+          </linearGradient>
+        </defs>
+        <rect width="1200" height="675" fill="#f5f5f7"/>
+        <rect x="300" y="180" width="600" height="360" rx="24" fill="url(#g1)"/>
+      </svg>
+
+      <svg class="end-frame" viewBox="0 0 1200 675" aria-hidden="true">
+        <defs>
+          <radialGradient id="g2" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"  stop-color="#fff9d6"/>
+            <stop offset="100%" stop-color="#c2a83a"/>
+          </radialGradient>
+        </defs>
+        <rect width="1200" height="675" fill="url(#g2)"/>
+        <rect x="200" y="120" width="800" height="440" rx="32"
+              fill="#1d1d1f" opacity="0.85"/>
+        <rect x="230" y="150" width="740" height="380" rx="16"
+              fill="#e8e275"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ===== 6. HIGHLIGHTS GRID ===== -->
+  <h2 class="section-title">Get the highlights.</h2>
+
+  <div class="highlights">
+    <article class="tile wide reveal">
+      <div>
+        <div class="eyebrow">Colors & Design</div>
+        <h3>Four stunning colors. One durable shell.</h3>
+      </div>
+      <div class="swatch-row">
+        <div class="swatch silver"></div>
+        <div class="swatch blush"></div>
+        <div class="swatch citrus"></div>
+        <div class="swatch indigo"></div>
+      </div>
+    </article>
+
+    <article class="tile narrow reveal">
+      <div>
+        <div class="eyebrow">Battery</div>
+        <h3>All-day power. Up to 18 hours.</h3>
+      </div>
+    </article>
+
+    <article class="tile half reveal">
+      <div>
+        <div class="eyebrow">Display</div>
+        <h3>13" Liquid Retina. One billion colors.</h3>
+      </div>
+    </article>
+
+    <article class="tile half reveal">
+      <div>
+        <div class="eyebrow">Intelligence</div>
+        <h3>A platform for AI. Smarter than smart.</h3>
+      </div>
+    </article>
+  </div>
+
+  <!-- ===== 7. COLOR-SWITCHER VIEWER =====
+       Pure CSS: radios first, then stage, then picker labels.
+       Order matters — the `~` selector only sees later siblings. -->
+  <section class="viewer">
+    <h2>Take a closer look.</h2>
+
+    <!-- 1) Radios (hidden) -->
+    <input type="radio" name="color" id="c-silver" class="color-input" checked />
+    <input type="radio" name="color" id="c-blush"  class="color-input" />
+    <input type="radio" name="color" id="c-citrus" class="color-input" />
+    <input type="radio" name="color" id="c-indigo" class="color-input" />
+
+    <!-- 2) Stage with one device per color -->
+    <div class="viewer-stage">
+      <svg class="device silver" viewBox="0 0 600 450" aria-hidden="true">
+        <rect width="600" height="450" rx="16" fill="#f5f5f7"/>
+        <rect x="80" y="80" width="440" height="280" rx="20"
+              fill="#d2d2d7"/>
+      </svg>
+      <svg class="device blush" viewBox="0 0 600 450" aria-hidden="true">
+        <rect width="600" height="450" rx="16" fill="#fff5f3"/>
+        <rect x="80" y="80" width="440" height="280" rx="20"
+              fill="#f7c9c4"/>
+      </svg>
+      <svg class="device citrus" viewBox="0 0 600 450" aria-hidden="true">
+        <rect width="600" height="450" rx="16" fill="#fffde8"/>
+        <rect x="80" y="80" width="440" height="280" rx="20"
+              fill="#e8e275"/>
+      </svg>
+      <svg class="device indigo" viewBox="0 0 600 450" aria-hidden="true">
+        <rect width="600" height="450" rx="16" fill="#e8ecf5"/>
+        <rect x="80" y="80" width="440" height="280" rx="20"
+              fill="#4a5b9a"/>
+      </svg>
+    </div>
+
+    <!-- 3) Picker (labels that flip the radios) -->
+    <div class="color-picker">
+      <label for="c-silver" class="swatch silver" title="Silver"></label>
+      <label for="c-blush"  class="swatch blush"  title="Blush"></label>
+      <label for="c-citrus" class="swatch citrus" title="Citrus"></label>
+      <label for="c-indigo" class="swatch indigo" title="Indigo"></label>
+    </div>
+  </section>
+
+  <!-- ===== 8. FEATURE SECTION (sticky image, scrolling copy) ===== -->
+  <section class="feature">
+    <div class="feature-art" aria-hidden="true"></div>
+    <div class="feature-copy">
+      <h2>The muscle for your hustle.</h2>
+      <p class="lede">
+        A custom chip helps you fly through everyday tasks, tap into your
+        creativity, and play action-packed games. Whatever the day brings,
+        you can move at the speed of inspiration.
+      </p>
+
+      <div class="stat">
+        <div class="big">18 hrs</div>
+        <div class="label">battery life on a single charge</div>
+      </div>
+
+      <div class="stat">
+        <div class="big">1B</div>
+        <div class="label">colors on the Liquid Retina display</div>
+      </div>
+
+      <div class="stat">
+        <div class="big">500 nits</div>
+        <div class="label">of brightness, indoors or out</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 9. COMPARISON CARDS ===== -->
+  <section id="compare">
+    <h2 class="section-title">Keep exploring.</h2>
+    <div class="compare">
+      <article class="compare-card">
+        <div class="art" style="background: linear-gradient(145deg,#e8e275,#c2a83a);"></div>
+        <h3>Lumen Air 13"</h3>
+        <div class="price">From $799</div>
+        <div class="actions">
+          <button class="pill">Buy</button>
+          <a href="#">Learn more ›</a>
+        </div>
+        <div class="chips">
+          <div>A-series chip</div>
+          <div>Up to 18 hours battery</div>
+          <div>2 USB-C ports</div>
+        </div>
+      </article>
+
+      <article class="compare-card">
+        <div class="art" style="background: linear-gradient(145deg,#4a5b9a,#2b3768);"></div>
+        <h3>Lumen Pro 14"</h3>
+        <div class="price">From $1,299</div>
+        <div class="actions">
+          <button class="pill">Buy</button>
+          <a href="#">Learn more ›</a>
+        </div>
+        <div class="chips">
+          <div>M-series chip</div>
+          <div>Up to 22 hours battery</div>
+          <div>3 Thunderbolt ports</div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== 10. FOOTER ===== -->
+  <footer>
+    <div class="inner">
+      <p>1. Battery life varies by use and configuration.</p>
+      <p>2. Screen size is measured diagonally.</p>
+      <p>This is a fictional product page built for educational purposes.</p>
+    </div>
+  </footer>
+
+<script>
+  /* =====================================================================
+     SCRIPT — three small enhancements. Most of the page works without JS;
+     these just add the polish.
+     ===================================================================== */
+
+  // (a) Sub-nav shadow on scroll
+  // Watch scrollY and toggle a class. Apple does the same to add a hairline
+  // border once the user has moved past the top of the page.
+  const subNav = document.getElementById('subNav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 40) subNav.classList.add('is-scrolled');
+    else                     subNav.classList.remove('is-scrolled');
+  }, { passive: true });
+
+  // (b) Hero crossfade
+  // Once the hero stage scrolls 15% into view, swap start → end frame.
+  // IntersectionObserver is the modern, performant way to do scroll
+  // triggers — avoid scroll-position math when you can.
+  const heroStage = document.getElementById('heroStage');
+  const heroObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        heroStage.classList.add('is-revealed');
+      }
+    });
+  }, { threshold: 0.15 });
+  heroObs.observe(heroStage);
+
+  // (c) Reveal-on-scroll for tiles
+  // Same pattern, applied to every `.reveal` element. We unobserve after
+  // revealing so the animation only plays once.
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-revealed');
+        revealObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+</script>
 </body>
 </html>
