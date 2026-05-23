@@ -6,7 +6,7 @@
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <!-- SWAP: page title (browser tab)                                  -->
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<title>Your Name — Engineer & Builder</title>
+<title>Milo — Developer & Builder</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -204,29 +204,29 @@
 
   /* visual container — tuned for vertical phone video with soft glow */
   .featured-visual {
-    max-width: 1024px;
-    margin: 0 auto;
-    aspect-ratio: 4 / 3;
-    background: linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
-    border-radius: var(--radius) var(--radius) 0 0;
-    position: relative;
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-    padding: 40px 0 0;
-  }
-  .featured-visual::before {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 70%; height: 90%;
-    transform: translate(-50%, -50%);
-    background:
-      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(94, 61, 240, 0.55), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0, 122, 255, 0.45), transparent 70%);
-    filter: blur(40px);
-    z-index: 0;
-    pointer-events: none;
-  }
+  max-width: 1024px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
+  border-radius: var(--radius) var(--radius) 0 0;
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 0 0;
+}
+.featured-visual::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 700px; height: 700px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(94, 61, 240, 0.85), transparent 55%),
+    radial-gradient(circle, rgba(0, 122, 255, 0.6), transparent 70%);
+  filter: blur(70px);
+  z-index: 0;
+  pointer-events: none;
+}
 
   /* ──────────────────── PROJECT GRID ──────────────────── */
   .grid-section {
@@ -678,11 +678,11 @@
     </div>
   </div>
   <div class="featured-visual reveal">
-    <video autoplay muted loop playsinline
-           style="position:relative; z-index:1; max-height:100%; max-width:100%; object-fit:contain; border-radius:28px;">
-      <source src="travel-planner.mp4" type="video/mp4" />
-    </video>
-  </div>
+  <video autoplay muted loop playsinline
+         style="position:relative; z-index:1; height:90%; max-width:320px; width:auto; object-fit:contain; border-radius:28px;">
+    <source src="travel-planner.mp4" type="video/mp4" />
+  </video>
+</div>
 </section>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
