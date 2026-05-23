@@ -204,24 +204,24 @@
 
   /* visual placeholder — replace with image/video */
   .featured-visual {
-    max-width: 1024px;
-    margin: 0 auto;
-    aspect-ratio: 16 / 9;
-    background:
-      radial-gradient(circle at 30% 40%, rgba(94, 61, 240, 0.4), transparent 50%),
-      radial-gradient(circle at 70% 60%, rgba(0, 122, 255, 0.35), transparent 50%),
-      linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
-    border-radius: var(--radius) var(--radius) 0 0;
-    position: relative;
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .featured-visual::after {
-    content: 'Featured project visual — replace with <img> or <video>';
-    color: rgba(255,255,255,0.4);
-    font-size: 13px;
-    font-family: 'Geist Mono', monospace;
-  }
+  max-width: 1024px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(94, 61, 240, 0.4), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(0, 122, 255, 0.35), transparent 50%),
+    linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
+  border-radius: var(--radius) var(--radius) 0 0;
+  position: relative;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.featured-visual::after {
+  content: 'Featured project visual — replace with <img> or <video>';
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+  font-family: 'Geist Mono', monospace;
+}
   /* swap the above with:
      <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"><source src="..." /></video>
      OR
@@ -677,13 +677,13 @@
       <a href="#">Source code <span class="arrow"></span></a>
     </div>
   </div>
-  <!-- SWAP: replace this <div> with <img> or <video> for the featured project hero -->
   <div class="featured-visual reveal">
-  <video autoplay muted loop playsinline
-         style="width:100%; height:100%; object-fit:cover;">
-    <source src="travel-planner.mp4" type="video/mp4" />
-  </video>
-</div>
+    <video autoplay muted loop playsinline
+           style="position:relative; z-index:1; max-height:100%; max-width:100%; object-fit:contain; border-radius:28px;">
+      <source src="travel-planner.mp4" type="video/mp4" />
+    </video>
+  </div>
+</section>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <!-- PROJECT TILES  ·  Duplicate / edit tiles, swap visuals          -->
