@@ -202,31 +202,31 @@
   }
   .featured-links a:hover { text-decoration: underline; }
 
-  /* visual placeholder — replace with image/video */
+  /* visual container — tuned for vertical phone video with soft glow */
   .featured-visual {
-  max-width: 1024px;
-  margin: 0 auto;
-  aspect-ratio: 16 / 9;
-  background:
-    radial-gradient(circle at 30% 40%, rgba(94, 61, 240, 0.4), transparent 50%),
-    radial-gradient(circle at 70% 60%, rgba(0, 122, 255, 0.35), transparent 50%),
-    linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
-  border-radius: var(--radius) var(--radius) 0 0;
-  position: relative;
-  overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-}
-.featured-visual::after {
-  content: 'Featured project visual — replace with <img> or <video>';
-  color: rgba(255,255,255,0.4);
-  font-size: 13px;
-  font-family: 'Geist Mono', monospace;
-}
-  /* swap the above with:
-     <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"><source src="..." /></video>
-     OR
-     <img src="..." style="width:100%;height:100%;object-fit:cover;" />
-  */
+    max-width: 1024px;
+    margin: 0 auto;
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
+    border-radius: var(--radius) var(--radius) 0 0;
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 0 0;
+  }
+  .featured-visual::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 70%; height: 90%;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(94, 61, 240, 0.55), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0, 122, 255, 0.45), transparent 70%);
+    filter: blur(40px);
+    z-index: 0;
+    pointer-events: none;
+  }
 
   /* ──────────────────── PROJECT GRID ──────────────────── */
   .grid-section {
