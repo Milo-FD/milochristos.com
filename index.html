@@ -2,780 +2,953 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lumen Air — Apple-Style Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- SWAP: page title (browser tab)                                  -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<title>Your Name — Engineer & Builder</title>
 
-<!--
-  ============================================================================
-  APPLE-STYLE PRODUCT PAGE — annotated for study
-  ============================================================================
-  This is a single-file demo built to mirror the techniques used on pages like
-  apple.com/macbook-neo. The product, copy, and visuals are fictional; the
-  patterns are real.
-
-  KEY TECHNIQUES YOU'LL SEE BELOW:
-    1.  Frosted sticky sub-nav  (backdrop-filter blur + scroll detection)
-    2.  Scroll-triggered hero crossfade (start-frame → end-frame transition)
-    3.  Massive typography with tight tracking (SF Pro–style stack)
-    4.  Bento-style "Highlights" grid with varied cell sizes
-    5.  Color-switcher product viewer (radio-driven image swap, no JS state)
-    6.  Scroll-reveal sections using IntersectionObserver
-    7.  Sticky-scroll feature card (text scrolls past a pinned image)
-    8.  Comparison cards row at the bottom
-    9.  Smooth anchor scrolling between sub-nav and sections
-    10. Generous negative space + restrained color palette
-  ============================================================================
--->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-  /* ===========================================================
-     1. DESIGN TOKENS
-     Apple-style pages are built on a small, disciplined token set.
-     Notice how few colors there are — that's the point.
-     =========================================================== */
   :root {
-    --bg:          #ffffff;
-    --bg-soft:     #f5f5f7;   /* Apple's signature off-white panel */
-    --bg-dark:     #161617;
-    --ink:         #1d1d1f;   /* Apple's near-black for text */
-    --ink-muted:   #6e6e73;
-    --link:        #0066cc;   /* Apple blue */
-    --link-hover:  #0077ed;
-    --border:      #d2d2d7;
-    --radius-lg:   28px;
-    --radius-md:   18px;
-
-    /* Apple uses very specific easing — this is close to their feel */
-    --ease:        cubic-bezier(0.28, 0.11, 0.32, 1);
-
-    /* The signature font stack: SF Pro on Apple devices,
-       graceful fallbacks elsewhere. */
-    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-                    "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                    "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --bg: #fbfbfd;
+    --bg-elev: #ffffff;
+    --bg-dark: #0a0a0c;
+    --bg-grey: #f5f5f7;
+    --ink: #1d1d1f;
+    --ink-soft: #424245;
+    --ink-mute: #6e6e73;
+    --ink-faint: #86868b;
+    --line: #d2d2d7;
+    --accent: #0066cc;
+    --accent-hover: #004ea3;
+    --radius: 22px;
+    --ease: cubic-bezier(0.28, 0.16, 0.22, 1);
   }
 
-  /* ===========================================================
-     2. BASELINE RESET
-     Minimal and unopinionated — Apple's CSS isn't fancy here,
-     they just zero things out and let the type carry the design.
-     =========================================================== */
-  *, *::before, *::after { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }  /* smooth anchor scrolling */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
   body {
-    margin: 0;
-    font-family: var(--font-text);
-    color: var(--ink);
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.47;
-    letter-spacing: -0.022em;        /* Apple's tight body tracking */
-  }
-  img, svg { display: block; max-width: 100%; }
-  a { color: var(--link); text-decoration: none; }
-  a:hover { color: var(--link-hover); text-decoration: underline; }
-  button { font: inherit; cursor: pointer; }
-
-  /* ===========================================================
-     3. STICKY GLOBAL NAV (top bar)
-     Apple's main nav: dark, thin, frosted on scroll.
-     =========================================================== */
-  .global-nav {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    height: 44px;
-    background: rgba(22, 22, 23, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    color: #f5f5f7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-  }
-  .global-nav ul {
-    display: flex;
-    gap: 40px;
-    list-style: none;
-    margin: 0; padding: 0;
-  }
-  .global-nav a {
-    color: #f5f5f7;
-    opacity: 0.8;
-    transition: opacity 0.2s var(--ease);
-  }
-  .global-nav a:hover { opacity: 1; text-decoration: none; }
-
-  /* ===========================================================
-     4. PRODUCT SUB-NAV
-     The "Overview | Specs | Compare | Buy" bar that sits BELOW
-     the global nav and also sticks. It picks up a subtle shadow
-     once you've scrolled past the hero — that's the .is-scrolled
-     class we toggle with JS at the bottom of the file.
-     =========================================================== */
-  .sub-nav {
-    position: sticky;
-    top: 44px;
-    z-index: 49;
-    background: rgba(245, 245, 247, 0.72);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.3s var(--ease);
-  }
-  .sub-nav.is-scrolled { border-bottom-color: rgba(0,0,0,0.08); }
-  .sub-nav-inner {
-    max-width: 1024px;
-    margin: 0 auto;
-    height: 52px;
-    padding: 0 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 14px;
-  }
-  .sub-nav-title { font-size: 21px; font-weight: 600; letter-spacing: -0.022em; }
-  .sub-nav-links { display: flex; gap: 28px; align-items: center; }
-  .sub-nav-links a { color: var(--ink); opacity: 0.88; }
-  .sub-nav-links a:hover { opacity: 1; text-decoration: none; }
-  .buy-btn {
-    background: var(--link);
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 980px;       /* Apple's pill radius */
-    font-size: 14px;
+    color: var(--ink);
     font-weight: 400;
-    border: none;
-    transition: background 0.2s var(--ease);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
   }
-  .buy-btn:hover { background: var(--link-hover); }
 
-  /* ===========================================================
-     5. HERO SECTION
-     The signature Apple opening: huge headline, tiny tagline,
-     and a big crossfading image. We layer TWO images on top of
-     each other and fade between them as the user scrolls.
-     =========================================================== */
+  ::selection { background: var(--ink); color: var(--bg); }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+
+  /* ──────────────────── NAV ──────────────────── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px;
+    background: rgba(251, 251, 253, 0.72);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-inner {
+    width: 100%; max-width: 1024px;
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; font-weight: 400;
+  }
+  .nav-brand {
+    font-weight: 600; letter-spacing: -0.02em; color: var(--ink);
+    font-size: 15px;
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { color: var(--ink); opacity: 0.85; transition: opacity .2s var(--ease); }
+  .nav-links a:hover { opacity: 1; }
+  .nav-cta {
+    color: var(--ink); opacity: 0.85;
+  }
+
+  /* ──────────────────── HERO ──────────────────── */
   .hero {
+    padding: 140px 24px 80px;
     text-align: center;
-    padding: 70px 22px 0;
+    background: var(--bg);
+    position: relative;
     overflow: hidden;
   }
-  .hero h1 {
-    font-family: var(--font-display);
-    font-size: clamp(40px, 8vw, 96px);
-    font-weight: 600;
-    letter-spacing: -0.015em;     /* tighter on display sizes */
-    line-height: 1.05;
-    margin: 0;
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 102, 204, 0.06), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 30%, rgba(255, 130, 80, 0.04), transparent 70%);
+    pointer-events: none;
   }
-  .hero .tagline {
-    font-family: var(--font-display);
-    font-size: clamp(24px, 3.5vw, 36px);
-    font-weight: 400;
-    color: var(--ink-muted);
-    margin: 12px 0 28px;
-  }
-  .hero-actions {
-    display: flex;
-    gap: 18px;
-    justify-content: center;
-    margin-bottom: 40px;
-    font-size: 17px;
-  }
-  .hero-actions .pill {
-    background: var(--link);
-    color: #fff;
-    padding: 12px 22px;
-    border-radius: 980px;
-    border: none;
-    font-size: 17px;
-  }
-  .hero-actions .pill:hover { background: var(--link-hover); }
-  .hero-actions .link-arrow::after { content: " ›"; }
-
-  /*
-    THE CROSSFADE STAGE.
-    Two SVG illustrations occupy the same grid cell. Both start
-    visible; on scroll we add `.is-faded` to the start frame to
-    reveal the end frame underneath. This is the same trick Apple
-    uses (with much fancier video assets) for hero transitions.
-  */
-  .hero-stage {
-    position: relative;
-    max-width: 1200px;
-    margin: 0 auto;
-    aspect-ratio: 16 / 9;
-    display: grid;
-    grid-template-areas: "stack";
-  }
-  .hero-stage > * {
-    grid-area: stack;          /* stack frames on top of each other */
-    width: 100%;
-    height: 100%;
-    transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
-  }
-  .hero-stage .start-frame { opacity: 1; }
-  .hero-stage .end-frame   { opacity: 0; transform: scale(1.04); }
-  .hero-stage.is-revealed .start-frame { opacity: 0; }
-  .hero-stage.is-revealed .end-frame   { opacity: 1; transform: scale(1); }
-
-  /* ===========================================================
-     6. HIGHLIGHTS GRID  (the "bento" of feature tiles)
-     A clean asymmetric grid. Each tile gets a soft background
-     and large display text. On Apple this is where each tile
-     also has a tiny tab list across the top — we'll mimic that.
-     =========================================================== */
-  .section-title {
-    font-family: var(--font-display);
-    font-size: clamp(32px, 5vw, 56px);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1.1;
-    text-align: center;
-    margin: 120px 0 36px;
-    padding: 0 22px;
-  }
-  .highlights {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 22px;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-  }
-  .tile {
-    background: var(--bg-soft);
-    border-radius: var(--radius-lg);
-    padding: 36px 32px;
-    min-height: 360px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    /* The reveal-on-scroll starting state. */
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
-  }
-  .tile.is-revealed { opacity: 1; transform: translateY(0); }
-  .tile h3 {
-    font-family: var(--font-display);
-    font-size: clamp(22px, 2.2vw, 28px);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1.2;
-    margin: 0;
-    max-width: 22ch;          /* Apple caps line length for readability */
-  }
-  .tile .eyebrow {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--ink-muted);
-    margin-bottom: 12px;
-  }
-  /*
-    Bento sizing — vary columns to create that asymmetric feel.
-    Adjusting these spans is the easiest way to change the rhythm.
-  */
-  .tile.wide   { grid-column: span 4; }
-  .tile.narrow { grid-column: span 2; }
-  .tile.half   { grid-column: span 3; }
-
-  @media (max-width: 900px) {
-    .tile.wide, .tile.narrow, .tile.half { grid-column: span 6; }
-  }
-
-  /* The "swatch" art inside tiles — using CSS gradients as
-     stand-ins for product photography. */
-  .swatch-row { display: flex; gap: 10px; margin-top: 20px; }
-  .swatch {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    box-shadow: inset 0 -8px 14px rgba(0,0,0,0.12),
-                inset 0 4px 6px rgba(255,255,255,0.35);
-  }
-  .swatch.silver { background: linear-gradient(145deg, #e8e8ec, #b8b8c0); }
-  .swatch.blush  { background: linear-gradient(145deg, #f7c9c4, #d99388); }
-  .swatch.citrus { background: linear-gradient(145deg, #e8e275, #c2a83a); }
-  .swatch.indigo { background: linear-gradient(145deg, #4a5b9a, #2b3768); }
-
-  /* ===========================================================
-     7. COLOR-SWITCHER PRODUCT VIEWER
-     Pure CSS state machine using radio inputs:
-     - Hide the radios (.color-input { display:none })
-     - Each label maps to one color
-     - The image with matching class is shown when its
-       sibling radio is :checked.
-     This is the same UX pattern as Apple's "Take a closer look".
-     =========================================================== */
-  .viewer {
-    background: var(--bg-soft);
-    margin: 80px 22px;
-    border-radius: var(--radius-lg);
-    padding: 80px 22px 60px;
-    text-align: center;
-  }
-  .viewer h2 {
-    font-family: var(--font-display);
-    font-size: clamp(28px, 4vw, 48px);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    margin: 0 0 40px;
-  }
-  .color-input { display: none; }     /* hide the radio circles */
-  .viewer-stage {
-    position: relative;
-    max-width: 720px;
-    margin: 0 auto;
-    aspect-ratio: 4 / 3;
-  }
-  .viewer-stage > .device {
-    position: absolute; inset: 0;
-    opacity: 0;
-    transition: opacity 0.5s var(--ease);
-  }
-  /*
-    The sibling-selector chain: when a radio is checked, find its
-    sibling .viewer-stage and inside it light up the matching device.
-    Order matters in the HTML below — radios come BEFORE the stage.
-  */
-  #c-silver:checked ~ .viewer-stage .device.silver,
-  #c-blush:checked  ~ .viewer-stage .device.blush,
-  #c-citrus:checked ~ .viewer-stage .device.citrus,
-  #c-indigo:checked ~ .viewer-stage .device.indigo { opacity: 1; }
-
-  .color-picker {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    margin-top: 32px;
-  }
-  .color-picker label {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    cursor: pointer;
-    position: relative;
-    transition: transform 0.2s var(--ease);
-  }
-  .color-picker label:hover { transform: scale(1.1); }
-  /* Selected state — a ring around the current swatch */
-  #c-silver:checked ~ .color-picker label[for="c-silver"]::after,
-  #c-blush:checked  ~ .color-picker label[for="c-blush"]::after,
-  #c-citrus:checked ~ .color-picker label[for="c-citrus"]::after,
-  #c-indigo:checked ~ .color-picker label[for="c-indigo"]::after {
-    content: "";
-    position: absolute;
-    inset: -5px;
-    border: 2px solid var(--ink);
-    border-radius: 50%;
-  }
-
-  /* ===========================================================
-     8. FEATURE SECTION WITH STICKY IMAGE
-     Apple often pins a product photo and lets the descriptive
-     text scroll past it. We use `position: sticky` for this.
-     =========================================================== */
-  .feature {
-    max-width: 1100px;
-    margin: 120px auto;
-    padding: 0 22px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    align-items: start;
-  }
-  .feature-art {
-    position: sticky;
-    top: 120px;             /* clears the global + sub-nav */
-    aspect-ratio: 4 / 5;
-    background: linear-gradient(160deg, #2b3768, #4a5b9a);
-    border-radius: var(--radius-lg);
-  }
-  .feature-copy h2 {
-    font-family: var(--font-display);
-    font-size: clamp(36px, 5vw, 64px);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1.05;
-    margin: 0 0 24px;
-  }
-  .feature-copy .lede {
-    font-size: 21px;
-    color: var(--ink-muted);
-    line-height: 1.38;
-    max-width: 32ch;
-    margin-bottom: 60px;
-  }
-  .feature-copy .stat {
-    border-top: 1px solid var(--border);
-    padding-top: 28px;
-    margin-bottom: 60px;
-  }
-  .feature-copy .stat .big {
-    font-family: var(--font-display);
-    font-size: clamp(48px, 6vw, 80px);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1;
-  }
-  .feature-copy .stat .label {
-    font-size: 17px;
-    color: var(--ink-muted);
-    margin-top: 8px;
-  }
-  @media (max-width: 800px) {
-    .feature { grid-template-columns: 1fr; }
-    .feature-art { position: relative; top: 0; max-width: 480px; margin: 0 auto; }
-  }
-
-  /* ===========================================================
-     9. COMPARISON CARDS
-     The "Keep exploring" row at the bottom of every Apple
-     product page. Equal columns, photo + name + tagline + chips.
-     =========================================================== */
-  .compare {
-    max-width: 1240px;
-    margin: 100px auto;
-    padding: 0 22px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
-  @media (max-width: 700px) {
-    .compare { grid-template-columns: 1fr; }
-  }
-  .compare-card {
-    background: var(--bg-soft);
-    border-radius: var(--radius-lg);
-    padding: 50px 36px;
-    text-align: center;
-  }
-  .compare-card .art {
-    height: 160px;
-    margin: 12px auto 28px;
-    border-radius: 16px;
-    background: linear-gradient(145deg, #e8e8ec, #b8b8c0);
-    max-width: 280px;
-  }
-  .compare-card h3 {
-    font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 600;
-    margin: 0 0 6px;
-  }
-  .compare-card .price {
-    font-size: 17px;
-    color: var(--ink-muted);
+  .hero-eyebrow {
+    font-size: 13px; font-weight: 500;
+    color: var(--ink-mute); letter-spacing: 0.02em;
     margin-bottom: 18px;
+    text-transform: uppercase;
+    position: relative;
   }
-  .compare-card .actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 28px;
+  .hero h1 {
+    font-size: clamp(48px, 9vw, 104px);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.98;
+    margin-bottom: 20px;
+    color: var(--ink);
+    position: relative;
   }
-  .compare-card .actions .pill {
-    background: var(--link);
-    color: #fff;
-    padding: 8px 18px;
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, #0066cc 0%, #5e3df0 50%, #f06292 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: clamp(19px, 2.2vw, 24px);
+    color: var(--ink-soft);
+    max-width: 680px;
+    margin: 0 auto 32px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    position: relative;
+  }
+  .hero-ctas {
+    display: flex; gap: 16px; justify-content: center;
+    position: relative;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 11px 22px;
     border-radius: 980px;
-    border: none;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition: all .25s var(--ease);
+    cursor: pointer; border: none;
+    font-family: inherit;
   }
-  .compare-card .chips {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--ink-muted);
+  .btn-primary {
+    background: var(--ink); color: var(--bg);
   }
+  .btn-primary:hover {
+    background: #000; transform: translateY(-1px);
+    color: var(--bg);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+  .btn-ghost:hover {
+    background: var(--ink); color: var(--bg);
+  }
+  .arrow::after {
+    content: '→'; font-size: 14px; transition: transform .25s var(--ease);
+  }
+  .btn:hover .arrow::after,
+  .arrow:hover::after { transform: translateX(3px); }
 
-  /* ===========================================================
-     10. FOOTER (Apple's mile-long legal block — abbreviated here)
-     =========================================================== */
-  footer {
-    background: var(--bg-soft);
-    color: var(--ink-muted);
-    font-size: 12px;
-    line-height: 1.5;
-    padding: 40px 22px;
+  /* ──────────────────── FEATURED SECTION (DARK) ──────────────────── */
+  .featured {
+    background: var(--bg-dark);
+    color: #f5f5f7;
+    padding: 100px 24px 0;
+    position: relative;
+    overflow: hidden;
   }
-  footer .inner {
+  .featured-content {
+    max-width: 1024px; margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .featured-tag {
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: #86868b; margin-bottom: 18px;
+  }
+  .featured h2 {
+    font-size: clamp(40px, 7vw, 80px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    margin-bottom: 18px;
+    color: #f5f5f7;
+  }
+  .featured-sub {
+    font-size: clamp(18px, 2vw, 22px);
+    color: #a1a1a6;
+    max-width: 600px;
+    margin: 0 auto 28px;
+    line-height: 1.4;
+  }
+  .featured-links {
+    display: flex; gap: 28px; justify-content: center;
+    margin-bottom: 60px;
+  }
+  .featured-links a {
+    color: #2997ff; font-size: 17px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .featured-links a:hover { text-decoration: underline; }
+
+  /* visual placeholder — replace with image/video */
+  .featured-visual {
     max-width: 1024px;
     margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(94, 61, 240, 0.4), transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(0, 122, 255, 0.35), transparent 50%),
+      linear-gradient(180deg, #1c1c1f 0%, #0a0a0c 100%);
+    border-radius: var(--radius) var(--radius) 0 0;
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
   }
-  footer p { margin: 0 0 12px; }
+  .featured-visual::after {
+    content: 'Featured project visual — replace with <img> or <video>';
+    color: rgba(255,255,255,0.4);
+    font-size: 13px;
+    font-family: 'Geist Mono', monospace;
+  }
+  /* swap the above with:
+     <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"><source src="..." /></video>
+     OR
+     <img src="..." style="width:100%;height:100%;object-fit:cover;" />
+  */
+
+  /* ──────────────────── PROJECT GRID ──────────────────── */
+  .grid-section {
+    padding: 24px 12px 12px;
+    background: var(--bg);
+  }
+  .grid-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 1024px;
+    margin: 0 auto 12px;
+  }
+  .grid-row.single { grid-template-columns: 1fr; }
+
+  .tile {
+    border-radius: var(--radius);
+    padding: 56px 40px 0;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    min-height: 580px;
+    display: flex; flex-direction: column;
+    transition: transform .4s var(--ease);
+  }
+  .tile:hover { transform: translateY(-3px); }
+
+  .tile-tag {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+  .tile h3 {
+    font-size: clamp(28px, 3.4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-bottom: 8px;
+  }
+  .tile-sub {
+    font-size: clamp(15px, 1.4vw, 17px);
+    opacity: 0.7;
+    margin-bottom: 18px;
+    line-height: 1.4;
+    max-width: 420px;
+    margin-left: auto; margin-right: auto;
+  }
+  .tile-links {
+    display: flex; gap: 24px; justify-content: center;
+    margin-bottom: 32px;
+    font-size: 15px;
+  }
+  .tile-visual {
+    margin-top: auto;
+    flex: 1;
+    border-radius: 14px 14px 0 0;
+    background: rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 260px;
+  }
+  .tile-visual::after {
+    content: 'image / video';
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    opacity: 0.3;
+  }
+
+  /* tile variants — light & dark, distinct gradients */
+  .tile.light { background: #f5f5f7; color: var(--ink); }
+  .tile.light a { color: var(--accent); }
+  .tile.light .tile-visual {
+    background: linear-gradient(140deg, #e8edf5, #d8e0ec 60%, #c4cfdf);
+  }
+
+  .tile.dark { background: #0a0a0c; color: #f5f5f7; }
+  .tile.dark a { color: #2997ff; }
+  .tile.dark .tile-tag { color: #a1a1a6; opacity: 1; }
+  .tile.dark .tile-sub { color: #a1a1a6; opacity: 1; }
+  .tile.dark .tile-visual {
+    background:
+      radial-gradient(circle at 50% 30%, rgba(255,140,90,0.35), transparent 60%),
+      linear-gradient(180deg, #18181b 0%, #050507 100%);
+  }
+
+  .tile.warm {
+    background: linear-gradient(160deg, #fff5ec 0%, #ffd9b8 100%);
+    color: #3a1f0a;
+  }
+  .tile.warm a { color: #b8430b; }
+  .tile.warm .tile-visual {
+    background: linear-gradient(140deg, #ffcaa0, #ffa970 70%, #ff8b4d);
+  }
+
+  .tile.cool {
+    background: linear-gradient(160deg, #ecf2ff 0%, #c4d3ff 100%);
+    color: #0a1b4d;
+  }
+  .tile.cool a { color: #3a4cb8; }
+  .tile.cool .tile-visual {
+    background: linear-gradient(140deg, #b8cdff, #8aa4ff 70%, #5b78f0);
+  }
+
+  .tile.violet {
+    background: linear-gradient(160deg, #1a0d2e 0%, #0a0612 100%);
+    color: #f5f5f7;
+  }
+  .tile.violet a { color: #c084fc; }
+  .tile.violet .tile-tag, .tile.violet .tile-sub { color: #a78bfa; opacity: 1; }
+  .tile.violet .tile-visual {
+    background:
+      radial-gradient(circle at 50% 30%, rgba(192, 132, 252, 0.5), transparent 55%),
+      linear-gradient(180deg, #2a1a48 0%, #0a0612 100%);
+  }
+
+  /* wide single tile */
+  .tile.wide {
+    min-height: 480px;
+    padding: 64px 48px 0;
+  }
+
+  /* ──────────────────── CAROUSEL ──────────────────── */
+  .carousel-section {
+    padding: 100px 0 80px;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .carousel-header {
+    max-width: 1024px;
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px;
+  }
+  .carousel-header h2 {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    max-width: 620px;
+    color: var(--ink);
+  }
+  .carousel-header h2 em {
+    font-style: normal;
+    color: var(--ink-faint);
+  }
+  .carousel-controls {
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+  }
+  .carousel-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    border: none;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1;
+    color: var(--ink);
+    font-family: inherit;
+    transition: background .2s var(--ease), opacity .2s var(--ease);
+  }
+  .carousel-btn:hover { background: rgba(0, 0, 0, 0.12); }
+  .carousel-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .carousel-btn:disabled:hover { background: rgba(0, 0, 0, 0.06); }
+
+  .carousel-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 4px max(24px, calc((100% - 1024px) / 2)) 24px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .carousel-track::-webkit-scrollbar { display: none; }
+
+  .carousel-card {
+    flex: 0 0 300px;
+    height: 460px;
+    border-radius: 18px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+    color: #f5f5f7;
+    padding: 28px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    cursor: pointer;
+    transition: transform .4s var(--ease);
+    text-decoration: none;
+  }
+  .carousel-card:hover { transform: translateY(-4px); }
+  .carousel-card .card-tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 10px;
+  }
+  .carousel-card h3 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #f5f5f7;
+  }
+  /* card color variants — distinct gradient atmospheres */
+  .carousel-card.c1 {
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255, 193, 7, 0.45), transparent 55%),
+      linear-gradient(180deg, #2a1a0a 0%, #0a0604 100%);
+  }
+  .carousel-card.c2 {
+    background:
+      radial-gradient(circle at 70% 25%, rgba(74, 222, 128, 0.4), transparent 55%),
+      linear-gradient(180deg, #0a1f12 0%, #04100a 100%);
+  }
+  .carousel-card.c3 {
+    background:
+      radial-gradient(circle at 30% 30%, rgba(244, 114, 182, 0.45), transparent 55%),
+      linear-gradient(180deg, #2a0a1f 0%, #100410 100%);
+  }
+  .carousel-card.c4 {
+    background:
+      radial-gradient(circle at 50% 20%, rgba(96, 165, 250, 0.45), transparent 55%),
+      linear-gradient(180deg, #0a142a 0%, #040810 100%);
+  }
+  .carousel-card.c5 {
+    background:
+      radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.5), transparent 55%),
+      linear-gradient(180deg, #2a160a 0%, #100804 100%);
+  }
+  .carousel-card.c6 {
+    background:
+      radial-gradient(circle at 70% 20%, rgba(167, 139, 250, 0.5), transparent 55%),
+      linear-gradient(180deg, #1a0a2a 0%, #0a0410 100%);
+  }
+
+  @media (max-width: 768px) {
+    .carousel-card { flex: 0 0 260px; height: 380px; padding: 22px; }
+    .carousel-track { padding: 4px 20px 24px; }
+    .carousel-header { padding: 0 20px; }
+  }
+
+  /* ──────────────────── APIS SECTION ──────────────────── */
+  .apis {
+    background: var(--bg-grey);
+    padding: 100px 24px;
+    margin-top: 12px;
+  }
+  .apis-inner { max-width: 1024px; margin: 0 auto; }
+  .section-heading {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 14px;
+    color: var(--ink);
+  }
+  .section-heading em {
+    font-style: normal; color: var(--ink-faint);
+  }
+  .section-sub {
+    font-size: 19px; color: var(--ink-soft);
+    max-width: 540px;
+    margin-bottom: 48px;
+    letter-spacing: -0.01em;
+  }
+  .api-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .api-card {
+    background: var(--bg-elev);
+    padding: 36px 32px;
+    transition: background .2s var(--ease);
+    cursor: pointer;
+  }
+  .api-card:hover { background: #fafafc; }
+  .api-card .endpoint {
+    font-family: 'Geist Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-mute);
+    margin-bottom: 14px;
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--bg-grey);
+    border-radius: 5px;
+  }
+  .api-card h4 {
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .api-card p {
+    font-size: 15px; color: var(--ink-soft);
+    line-height: 1.5; margin-bottom: 18px;
+  }
+  .api-card .link {
+    font-size: 14px; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+
+  /* ──────────────────── ABOUT STRIP ──────────────────── */
+  .about {
+    padding: 120px 24px;
+    text-align: center;
+    background: var(--bg);
+  }
+  .about-inner { max-width: 760px; margin: 0 auto; }
+  .about h2 {
+    font-size: clamp(36px, 5.5vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+  .about h2 em {
+    font-style: normal;
+    color: var(--ink-faint);
+  }
+  .about p {
+    font-size: 19px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+  }
+
+  /* ──────────────────── FOOTER ──────────────────── */
+  footer {
+    background: var(--bg-grey);
+    padding: 56px 24px 32px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .footer-inner { max-width: 1024px; margin: 0 auto; }
+  .footer-cols {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .footer-col h5 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .footer-col ul { list-style: none; }
+  .footer-col li { margin-bottom: 8px; }
+  .footer-col a {
+    color: var(--ink-mute);
+    transition: color .2s var(--ease);
+  }
+  .footer-col a:hover { color: var(--ink); }
+  .footer-base {
+    padding-top: 24px;
+    display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+    color: var(--ink-mute);
+  }
+  .footer-base a { color: var(--ink-mute); }
+  .footer-base a:hover { color: var(--ink); }
+
+  /* ──────────────────── REVEAL ANIMATION ──────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .9s var(--ease), transform .9s var(--ease);
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ──────────────────── RESPONSIVE ──────────────────── */
+  @media (max-width: 768px) {
+    .nav-links { gap: 18px; }
+    .nav-links a:nth-child(n+4) { display: none; }
+    .grid-row { grid-template-columns: 1fr; }
+    .api-grid { grid-template-columns: 1fr; }
+    .footer-cols { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+    .tile { padding: 44px 28px 0; min-height: 460px; }
+    .tile-visual { min-height: 200px; }
+    .hero { padding: 110px 20px 60px; }
+    .featured { padding: 70px 20px 0; }
+  }
 </style>
 </head>
 <body>
 
-  <!-- ===== 3. GLOBAL NAV ===== -->
-  <nav class="global-nav" aria-label="Global">
-    <ul>
-      <li><a href="#">Home</a></li>
-      <li><a href="#">Projects</a></li>
-      <li><a href="#">Contact</a></li>
-      <li><a href="#">Search</a></li>
-    </ul>
-  </nav>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- NAV  ·  SWAP: your name + section anchors                       -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">Your Name</a>
+    <div class="nav-links">
+      <a href="#projects">Projects</a>
+      <a href="#apis">APIs</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+      <a href="https://github.com" class="nav-cta">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
 
-  <!-- ===== 4. PRODUCT SUB-NAV ===== -->
-  <div class="sub-nav" id="subNav">
-    <div class="sub-nav-inner">
-      <div class="sub-nav-title">Milo Christos</div>
-      <div class="sub-nav-links">
-        <a href="#overview">Overview</a>
-        <a href="#specs">Specs</a>
-        <a href="#compare">Compare</a>
-        <button class="buy-btn">Buy</button>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- HERO  ·  SWAP: name, tagline, two CTAs                          -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="hero">
+  <div class="hero-eyebrow reveal">Software · APIs · Systems</div>
+  <h1 class="reveal">I build things that <em>just work.</em></h1>
+  <p class="hero-sub reveal">
+    Hi, I'm Your Name — an engineer building APIs, tools and products with a focus on
+    performance, clarity and craft. Selected work below.
+  </p>
+  <div class="hero-ctas reveal">
+    <a href="#projects" class="btn btn-primary">See my work</a>
+    <a href="mailto:you@example.com" class="btn btn-ghost">Get in touch <span class="arrow"></span></a>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- FEATURED PROJECT (dark)  ·  SWAP: title, copy, visual           -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="featured" id="projects">
+  <div class="featured-content">
+    <div class="featured-tag reveal">Featured Project</div>
+    <h2 class="reveal">Project One.</h2>
+    <p class="featured-sub reveal">
+      A one-line description of what makes this project worth your time.
+      Replace this text with your real pitch.
+    </p>
+    <div class="featured-links reveal">
+      <a href="#">Live demo <span class="arrow"></span></a>
+      <a href="#">Source code <span class="arrow"></span></a>
+    </div>
+  </div>
+  <!-- SWAP: replace this <div> with <img> or <video> for the featured project hero -->
+  <div class="featured-visual reveal"></div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- PROJECT TILES  ·  Duplicate / edit tiles, swap visuals          -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="grid-section">
+
+  <!-- Row 1: two tiles side by side -->
+  <div class="grid-row">
+
+    <div class="tile light reveal">
+      <div class="tile-tag">Web App</div>
+      <h3>Project Two</h3>
+      <p class="tile-sub">A short hook about what this one does and why it matters.</p>
+      <div class="tile-links">
+        <a href="#">Learn more <span class="arrow"></span></a>
+        <a href="#">Try it <span class="arrow"></span></a>
       </div>
+      <div class="tile-visual"><!-- SWAP visual --></div>
+    </div>
+
+    <div class="tile dark reveal">
+      <div class="tile-tag">CLI Tool</div>
+      <h3>Project Three</h3>
+      <p class="tile-sub">A second hook for the second tile. Keep it crisp.</p>
+      <div class="tile-links">
+        <a href="#">Docs <span class="arrow"></span></a>
+        <a href="#">Install <span class="arrow"></span></a>
+      </div>
+      <div class="tile-visual"><!-- SWAP visual --></div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: one wide tile -->
+  <div class="grid-row single">
+    <div class="tile violet wide reveal">
+      <div class="tile-tag">Open Source</div>
+      <h3>Project Four</h3>
+      <p class="tile-sub">A wider showcase row — use this for your biggest or favorite project.</p>
+      <div class="tile-links">
+        <a href="#">Read the case study <span class="arrow"></span></a>
+        <a href="#">GitHub <span class="arrow"></span></a>
+      </div>
+      <div class="tile-visual"><!-- SWAP visual --></div>
     </div>
   </div>
 
-  <!-- ===== 5. HERO ===== -->
-  <section class="hero" id="overview">
-    <h1>Milo Christos</h1>
-    <p class="tagline">Hello, light.</p>
+  <!-- Row 3: two tiles side by side -->
+  <div class="grid-row">
 
-    <div class="hero-actions">
-      <button class="pill">Buy</button>
-      <a href="#" class="link-arrow">From $799</a>
+    <div class="tile warm reveal">
+      <div class="tile-tag">Mobile</div>
+      <h3>Project Five</h3>
+      <p class="tile-sub">Short, sharp, specific. Tell visitors why they should care.</p>
+      <div class="tile-links">
+        <a href="#">App Store <span class="arrow"></span></a>
+        <a href="#">Details <span class="arrow"></span></a>
+      </div>
+      <div class="tile-visual"><!-- SWAP visual --></div>
     </div>
 
-    <!--
-      The crossfade stage. The start frame is a single-color render;
-      the end frame shows the product in context. Watching the page,
-      they swap when this element scrolls into view.
-    -->
-    <div class="hero-stage" id="heroStage">
-      <svg class="start-frame" viewBox="0 0 1200 675" aria-hidden="true">
-        <defs>
-          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#e8e275"/>
-            <stop offset="100%" stop-color="#c2a83a"/>
-          </linearGradient>
-        </defs>
-        <rect width="1200" height="675" fill="#f5f5f7"/>
-        <rect x="300" y="180" width="600" height="360" rx="24" fill="url(#g1)"/>
-      </svg>
-
-      <svg class="end-frame" viewBox="0 0 1200 675" aria-hidden="true">
-        <defs>
-          <radialGradient id="g2" cx="50%" cy="40%" r="60%">
-            <stop offset="0%"  stop-color="#fff9d6"/>
-            <stop offset="100%" stop-color="#c2a83a"/>
-          </radialGradient>
-        </defs>
-        <rect width="1200" height="675" fill="url(#g2)"/>
-        <rect x="200" y="120" width="800" height="440" rx="32"
-              fill="#1d1d1f" opacity="0.85"/>
-        <rect x="230" y="150" width="740" height="380" rx="16"
-              fill="#e8e275"/>
-      </svg>
+    <div class="tile cool reveal">
+      <div class="tile-tag">Experiment</div>
+      <h3>Project Six</h3>
+      <p class="tile-sub">A side project or experiment. Replace with whatever fits.</p>
+      <div class="tile-links">
+        <a href="#">Demo <span class="arrow"></span></a>
+        <a href="#">Write-up <span class="arrow"></span></a>
+      </div>
+      <div class="tile-visual"><!-- SWAP visual --></div>
     </div>
-  </section>
 
-  <!-- ===== 6. HIGHLIGHTS GRID ===== -->
-  <h2 class="section-title">Get the highlights.</h2>
+  </div>
+</section>
 
-  <div class="highlights">
-    <article class="tile wide reveal">
-      <div>
-        <div class="eyebrow">Colors & Design</div>
-        <h3>Four stunning colors. One durable shell.</h3>
-      </div>
-      <div class="swatch-row">
-        <div class="swatch silver"></div>
-        <div class="swatch blush"></div>
-        <div class="swatch citrus"></div>
-        <div class="swatch indigo"></div>
-      </div>
-    </article>
-
-    <article class="tile narrow reveal">
-      <div>
-        <div class="eyebrow">Battery</div>
-        <h3>All-day power. Up to 18 hours.</h3>
-      </div>
-    </article>
-
-    <article class="tile half reveal">
-      <div>
-        <div class="eyebrow">Display</div>
-        <h3>13" Liquid Retina. One billion colors.</h3>
-      </div>
-    </article>
-
-    <article class="tile half reveal">
-      <div>
-        <div class="eyebrow">Intelligence</div>
-        <h3>A platform for AI. Smarter than smart.</h3>
-      </div>
-    </article>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- CAROUSEL  ·  Stories / talks / experiments / extra projects     -->
+<!-- Duplicate .carousel-card blocks to add more. Variants: c1-c6    -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="carousel-section">
+  <div class="carousel-header reveal">
+    <h2>Stories. <em>Talks, writing & experiments.</em></h2>
+    <div class="carousel-controls">
+      <button class="carousel-btn" id="carousel-prev" aria-label="Previous">‹</button>
+      <button class="carousel-btn" id="carousel-next" aria-label="Next">›</button>
+    </div>
   </div>
 
-  <!-- ===== 7. COLOR-SWITCHER VIEWER =====
-       Pure CSS: radios first, then stage, then picker labels.
-       Order matters — the `~` selector only sees later siblings. -->
-  <section class="viewer">
-    <h2>Take a closer look.</h2>
+  <div class="carousel-track" id="carousel-track">
 
-    <!-- 1) Radios (hidden) -->
-    <input type="radio" name="color" id="c-silver" class="color-input" checked />
-    <input type="radio" name="color" id="c-blush"  class="color-input" />
-    <input type="radio" name="color" id="c-citrus" class="color-input" />
-    <input type="radio" name="color" id="c-indigo" class="color-input" />
+    <a href="#" class="carousel-card c1">
+      <div class="card-tag">Talk</div>
+      <h3>How I built my first API — and what I'd do differently now.</h3>
+    </a>
 
-    <!-- 2) Stage with one device per color -->
-    <div class="viewer-stage">
-      <svg class="device silver" viewBox="0 0 600 450" aria-hidden="true">
-        <rect width="600" height="450" rx="16" fill="#f5f5f7"/>
-        <rect x="80" y="80" width="440" height="280" rx="20"
-              fill="#d2d2d7"/>
-      </svg>
-      <svg class="device blush" viewBox="0 0 600 450" aria-hidden="true">
-        <rect width="600" height="450" rx="16" fill="#fff5f3"/>
-        <rect x="80" y="80" width="440" height="280" rx="20"
-              fill="#f7c9c4"/>
-      </svg>
-      <svg class="device citrus" viewBox="0 0 600 450" aria-hidden="true">
-        <rect width="600" height="450" rx="16" fill="#fffde8"/>
-        <rect x="80" y="80" width="440" height="280" rx="20"
-              fill="#e8e275"/>
-      </svg>
-      <svg class="device indigo" viewBox="0 0 600 450" aria-hidden="true">
-        <rect width="600" height="450" rx="16" fill="#e8ecf5"/>
-        <rect x="80" y="80" width="440" height="280" rx="20"
-              fill="#4a5b9a"/>
-      </svg>
+    <a href="#" class="carousel-card c2">
+      <div class="card-tag">Essay</div>
+      <h3>Notes on building tools you actually want to use.</h3>
+    </a>
+
+    <a href="#" class="carousel-card c3">
+      <div class="card-tag">Experiment</div>
+      <h3>A weekend project that turned into something bigger.</h3>
+    </a>
+
+    <a href="#" class="carousel-card c4">
+      <div class="card-tag">Case Study</div>
+      <h3>From idea to launch in 14 days. Here's the timeline.</h3>
+    </a>
+
+    <a href="#" class="carousel-card c5">
+      <div class="card-tag">Tutorial</div>
+      <h3>The setup I use to ship side projects on weekends.</h3>
+    </a>
+
+    <a href="#" class="carousel-card c6">
+      <div class="card-tag">Interview</div>
+      <h3>A conversation about craft, taste and shipping.</h3>
+    </a>
+
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- APIs  ·  Duplicate api-card divs for each API                   -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="apis" id="apis">
+  <div class="apis-inner">
+    <h2 class="section-heading reveal">APIs I've built. <em>Production-ready, well-documented.</em></h2>
+    <p class="section-sub reveal">Each API below is open for use — drop a base URL in your client and go.</p>
+
+    <div class="api-grid reveal">
+
+      <a href="#" class="api-card">
+        <span class="endpoint">GET /api/v1/things</span>
+        <h4>API One</h4>
+        <p>A one-paragraph description of what this API does, who it's for, and its main use case.</p>
+        <span class="link">View docs <span class="arrow"></span></span>
+      </a>
+
+      <a href="#" class="api-card">
+        <span class="endpoint">POST /api/v1/process</span>
+        <h4>API Two</h4>
+        <p>Replace this with your real API. Keep the description focused on the value, not the tech.</p>
+        <span class="link">View docs <span class="arrow"></span></span>
+      </a>
+
+      <a href="#" class="api-card">
+        <span class="endpoint">GET /api/v1/lookup</span>
+        <h4>API Three</h4>
+        <p>Third API description goes here. Two to three lines reads best.</p>
+        <span class="link">View docs <span class="arrow"></span></span>
+      </a>
+
+      <a href="#" class="api-card">
+        <span class="endpoint">WS /api/v1/stream</span>
+        <h4>API Four</h4>
+        <p>Fourth API. Add or remove cards as needed — the grid will reflow automatically.</p>
+        <span class="link">View docs <span class="arrow"></span></span>
+      </a>
+
     </div>
+  </div>
+</section>
 
-    <!-- 3) Picker (labels that flip the radios) -->
-    <div class="color-picker">
-      <label for="c-silver" class="swatch silver" title="Silver"></label>
-      <label for="c-blush"  class="swatch blush"  title="Blush"></label>
-      <label for="c-citrus" class="swatch citrus" title="Citrus"></label>
-      <label for="c-indigo" class="swatch indigo" title="Indigo"></label>
-    </div>
-  </section>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ABOUT  ·  SWAP your bio                                         -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section class="about" id="about">
+  <div class="about-inner">
+    <h2 class="reveal">A bit about me. <em>And what I'm looking for next.</em></h2>
+    <p class="reveal">
+      Two or three sentences here about who you are, what you've worked on, and what kind of
+      role or collaboration excites you. Keep it human — this is the most-read paragraph on
+      most portfolios. Mention one specific thing you're proud of.
+    </p>
+  </div>
+</section>
 
-  <!-- ===== 8. FEATURE SECTION (sticky image, scrolling copy) ===== -->
-  <section class="feature">
-    <div class="feature-art" aria-hidden="true"></div>
-    <div class="feature-copy">
-      <h2>The muscle for your hustle.</h2>
-      <p class="lede">
-        A custom chip helps you fly through everyday tasks, tap into your
-        creativity, and play action-packed games. Whatever the day brings,
-        you can move at the speed of inspiration.
-      </p>
-
-      <div class="stat">
-        <div class="big">18 hrs</div>
-        <div class="label">battery life on a single charge</div>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- FOOTER  ·  SWAP links, socials, contact                         -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<footer id="contact">
+  <div class="footer-inner">
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h5>Work</h5>
+        <ul>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#apis">APIs</a></li>
+          <li><a href="#">Case studies</a></li>
+          <li><a href="#">Résumé / CV</a></li>
+        </ul>
       </div>
-
-      <div class="stat">
-        <div class="big">1B</div>
-        <div class="label">colors on the Liquid Retina display</div>
+      <div class="footer-col">
+        <h5>Connect</h5>
+        <ul>
+          <li><a href="https://github.com">GitHub</a></li>
+          <li><a href="https://linkedin.com">LinkedIn</a></li>
+          <li><a href="https://x.com">X / Twitter</a></li>
+          <li><a href="mailto:you@example.com">Email</a></li>
+        </ul>
       </div>
-
-      <div class="stat">
-        <div class="big">500 nits</div>
-        <div class="label">of brightness, indoors or out</div>
+      <div class="footer-col">
+        <h5>Writing</h5>
+        <ul>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Newsletter</a></li>
+          <li><a href="#">Talks</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>More</h5>
+        <ul>
+          <li><a href="#about">About</a></li>
+          <li><a href="#">Now</a></li>
+          <li><a href="#">Colophon</a></li>
+        </ul>
       </div>
     </div>
-  </section>
-
-  <!-- ===== 9. COMPARISON CARDS ===== -->
-  <section id="compare">
-    <h2 class="section-title">Keep exploring.</h2>
-    <div class="compare">
-      <article class="compare-card">
-        <div class="art" style="background: linear-gradient(145deg,#e8e275,#c2a83a);"></div>
-        <h3>Lumen Air 13"</h3>
-        <div class="price">From $799</div>
-        <div class="actions">
-          <button class="pill">Buy</button>
-          <a href="#">Learn more ›</a>
-        </div>
-        <div class="chips">
-          <div>A-series chip</div>
-          <div>Up to 18 hours battery</div>
-          <div>2 USB-C ports</div>
-        </div>
-      </article>
-
-      <article class="compare-card">
-        <div class="art" style="background: linear-gradient(145deg,#4a5b9a,#2b3768);"></div>
-        <h3>Lumen Pro 14"</h3>
-        <div class="price">From $1,299</div>
-        <div class="actions">
-          <button class="pill">Buy</button>
-          <a href="#">Learn more ›</a>
-        </div>
-        <div class="chips">
-          <div>M-series chip</div>
-          <div>Up to 22 hours battery</div>
-          <div>3 Thunderbolt ports</div>
-        </div>
-      </article>
+    <div class="footer-base">
+      <span>© <span id="year"></span> Your Name. Built from scratch, hosted everywhere.</span>
+      <span><a href="#">Privacy</a> · <a href="#">Terms</a></span>
     </div>
-  </section>
-
-  <!-- ===== 10. FOOTER ===== -->
-  <footer>
-    <div class="inner">
-      <p>1. Battery life varies by use and configuration.</p>
-      <p>2. Screen size is measured diagonally.</p>
-      <p>This is a fictional product page built for educational purposes.</p>
-    </div>
-  </footer>
+  </div>
+</footer>
 
 <script>
-  /* =====================================================================
-     SCRIPT — three small enhancements. Most of the page works without JS;
-     these just add the polish.
-     ===================================================================== */
+  // Year stamp
+  document.getElementById('year').textContent = new Date().getFullYear();
 
-  // (a) Sub-nav shadow on scroll
-  // Watch scrollY and toggle a class. Apple does the same to add a hairline
-  // border once the user has moved past the top of the page.
-  const subNav = document.getElementById('subNav');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 40) subNav.classList.add('is-scrolled');
-    else                     subNav.classList.remove('is-scrolled');
-  }, { passive: true });
+  // Carousel — prev/next buttons + disabled state at ends
+  (() => {
+    const track = document.getElementById('carousel-track');
+    const prev = document.getElementById('carousel-prev');
+    const next = document.getElementById('carousel-next');
+    if (!track) return;
 
-  // (b) Hero crossfade
-  // Once the hero stage scrolls 15% into view, swap start → end frame.
-  // IntersectionObserver is the modern, performant way to do scroll
-  // triggers — avoid scroll-position math when you can.
-  const heroStage = document.getElementById('heroStage');
-  const heroObs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        heroStage.classList.add('is-revealed');
+    const step = () => {
+      const card = track.querySelector('.carousel-card');
+      return card ? card.offsetWidth + 16 : 320;
+    };
+
+    const updateButtons = () => {
+      prev.disabled = track.scrollLeft <= 4;
+      next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    };
+
+    prev.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    next.addEventListener('click', () => track.scrollBy({ left:  step(), behavior: 'smooth' }));
+    track.addEventListener('scroll', updateButtons, { passive: true });
+    window.addEventListener('resize', updateButtons);
+    updateButtons();
+  })();
+
+  // Scroll-triggered reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        // small stagger per group
+        const delay = Math.min(i * 60, 240);
+        setTimeout(() => e.target.classList.add('in'), delay);
+        io.unobserve(e.target);
       }
     });
-  }, { threshold: 0.15 });
-  heroObs.observe(heroStage);
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-  // (c) Reveal-on-scroll for tiles
-  // Same pattern, applied to every `.reveal` element. We unobserve after
-  // revealing so the animation only plays once.
-  const revealObs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-revealed');
-        revealObs.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.2 });
-  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 </script>
+
 </body>
 </html>
